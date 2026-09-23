@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #undef max
 extern "C" {
+#include <libavutil/audio_fifo.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
 #include <libswscale/swscale.h>
@@ -73,51 +74,56 @@ static int wav_to_mp3(char* inputfile, char* outputfile) {
     AVPacket* packet = av_packet_alloc();
     int ret = 0;
 
+    // --- ИСПРАВЛЕНИЕ: Заранее объявляем переменные ---
+    int audio_stream_index = -1;
+    const AVCodec* input_codec = nullptr;
+    AVStream* output_stream = nullptr;
+    const AVCodec* output_codec = nullptr;
+    // --------------------------------------------------
+
     // Open input file.
     if ((ret = avformat_open_input(&input_format_ctx, input_filename, nullptr, nullptr)) < 0) {
-        std::cerr << "Could not open input file: " << std::endl;
+        std::cerr << "Could not open input file\n";
         return 0;
     }
 
-    // Find stream info
     if ((ret = avformat_find_stream_info(input_format_ctx, nullptr)) < 0) {
-        std::cerr << "Failed to find stream info: " << std::endl;
-        return 0;
+        std::cerr << "Failed to find stream info\n";
+        goto cleanup;
     }
 
-    // Find audio stream
-    int audio_stream_index = av_find_best_stream(input_format_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+    // Здесь убираем слово 'int', так как переменная уже объявлена выше
+    audio_stream_index = av_find_best_stream(input_format_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
     if (audio_stream_index < 0) {
         std::cerr << "Could not find audio stream\n";
-        return 0;
+        goto cleanup;
     }
 
-    // Initialize decoder codec
-    const AVCodec* input_codec = avcodec_find_decoder(input_format_ctx->streams[audio_stream_index]->codecpar->codec_id);
+    // Убираем 'const AVCodec*'
+    input_codec = avcodec_find_decoder(input_format_ctx->streams[audio_stream_index]->codecpar->codec_id);
     input_codec_ctx = avcodec_alloc_context3(input_codec);
     avcodec_parameters_to_context(input_codec_ctx, input_format_ctx->streams[audio_stream_index]->codecpar);
 
     if ((ret = avcodec_open2(input_codec_ctx, input_codec, nullptr)) < 0) {
-        std::cerr << "Failed to open input codec: " << std::endl;
-        return 0;
+        std::cerr << "Failed to open input codec\n";
+        goto cleanup;
     }
 
-    // Create output format context
     avformat_alloc_output_context2(&output_format_ctx, nullptr, nullptr, output_filename);
     if (!output_format_ctx) {
         std::cerr << "Could not create output context\n";
-        return 0;
+        goto cleanup;
     }
 
-    // Create output stream
-    AVStream* output_stream = avformat_new_stream(output_format_ctx, nullptr);
+    // Убираем 'AVStream*'
+    output_stream = avformat_new_stream(output_format_ctx, nullptr);
     if (!output_stream) {
         std::cerr << "Failed to create output stream\n";
-        return 0;
+        goto cleanup;
     }
 
-    // Configure codec for MP3
-    const AVCodec* output_codec = avcodec_find_encoder(AV_CODEC_ID_MP3);
+    // Убираем 'const AVCodec*'
+    output_codec = avcodec_find_encoder(AV_CODEC_ID_MP3);
     output_codec_ctx = avcodec_alloc_context3(output_codec);
 
     output_codec_ctx->bit_rate = 256000;
@@ -127,33 +133,26 @@ static int wav_to_mp3(char* inputfile, char* outputfile) {
     av_channel_layout_default(&output_codec_ctx->ch_layout, 2);
 
     if (output_format_ctx->oformat->flags & AVFMT_GLOBALHEADER)
-    output_codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        output_codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     if ((ret = avcodec_open2(output_codec_ctx, output_codec, nullptr)) < 0) {
-        std::cerr << "Failed to open output codec: " << std::endl;
+        std::cerr << "Failed to open output codec\n";
         goto cleanup;
     }
 
-    // Copy codec parameters to stream
     avcodec_parameters_from_context(output_stream->codecpar, output_codec_ctx);
 
-    // Open output file
     if (!(output_format_ctx->oformat->flags & AVFMT_NOFILE)) {
         if ((ret = avio_open(&output_format_ctx->pb, output_filename, AVIO_FLAG_WRITE)) < 0) {
-            std::cerr << "Could not open output file: " << std::endl;
+            std::cerr << "Could not open output file\n";
             goto cleanup;
         }
     }
 
-    // Write file header
     if ((ret = avformat_write_header(output_format_ctx, nullptr)) < 0) {
-        std::cerr << "Failed to write header: " << std::endl;
+        std::cerr << "Failed to write header\n";
         goto cleanup;
     }
-
-    // Write file header
-    AVChannelLayout stereo_layout;
-    av_channel_layout_default(&stereo_layout, 2);
 
     swr_alloc_set_opts2(&resampler,
         &output_codec_ctx->ch_layout,
@@ -165,57 +164,96 @@ static int wav_to_mp3(char* inputfile, char* outputfile) {
         0, nullptr);
     swr_init(resampler);
 
-    // Process frames
-    while (av_read_frame(input_format_ctx, packet) >= 0) {
-        if (packet->stream_index == audio_stream_index) {
-            ret = avcodec_send_packet(input_codec_ctx, packet);
-            while (ret >= 0) {
-                ret = avcodec_receive_frame(input_codec_ctx, frame);
-                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-                    break;
-                else if (ret < 0) {
-                    std::cerr << "Error during decoding: " << std::endl;
-                    goto cleanup;
+    {
+        AVAudioFifo* fifo = av_audio_fifo_alloc(output_codec_ctx->sample_fmt, output_codec_ctx->ch_layout.nb_channels, 1);
+        int64_t current_pts = 0;
+
+        while (av_read_frame(input_format_ctx, packet) >= 0) {
+            if (packet->stream_index == audio_stream_index) {
+                ret = avcodec_send_packet(input_codec_ctx, packet);
+                while (ret >= 0) {
+                    ret = avcodec_receive_frame(input_codec_ctx, frame);
+                    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                        break;
+                    else if (ret < 0) {
+                        std::cerr << "Error during decoding\n";
+                        goto cleanup;
+                    }
+
+                    int out_samples = swr_get_out_samples(resampler, frame->nb_samples);
+                    AVFrame* resampled_frame = av_frame_alloc();
+                    resampled_frame->sample_rate = output_codec_ctx->sample_rate;
+                    resampled_frame->format = output_codec_ctx->sample_fmt;
+                    av_channel_layout_copy(&resampled_frame->ch_layout, &output_codec_ctx->ch_layout);
+                    resampled_frame->nb_samples = out_samples;
+                    av_frame_get_buffer(resampled_frame, 0);
+
+                    int converted = swr_convert(resampler, resampled_frame->data, out_samples,
+                        (const uint8_t**)frame->data, frame->nb_samples);
+
+                    av_audio_fifo_write(fifo, (void**)resampled_frame->data, converted);
+                    av_frame_free(&resampled_frame);
+
+                    while (av_audio_fifo_size(fifo) >= output_codec_ctx->frame_size) {
+                        AVFrame* encode_frame = av_frame_alloc();
+                        encode_frame->sample_rate = output_codec_ctx->sample_rate;
+                        encode_frame->format = output_codec_ctx->sample_fmt;
+                        av_channel_layout_copy(&encode_frame->ch_layout, &output_codec_ctx->ch_layout);
+                        encode_frame->nb_samples = output_codec_ctx->frame_size;
+                        av_frame_get_buffer(encode_frame, 0);
+
+                        av_audio_fifo_read(fifo, (void**)encode_frame->data, output_codec_ctx->frame_size);
+                        encode_frame->pts = current_pts;
+                        current_pts += encode_frame->nb_samples;
+
+                        avcodec_send_frame(output_codec_ctx, encode_frame);
+                        while (avcodec_receive_packet(output_codec_ctx, packet) >= 0) {
+                            av_interleaved_write_frame(output_format_ctx, packet);
+                            av_packet_unref(packet);
+                        }
+                        av_frame_free(&encode_frame);
+                    }
                 }
-
-                // Resampling
-                AVFrame* resampled_frame = av_frame_alloc();
-                resampled_frame->sample_rate = output_codec_ctx->sample_rate;
-                resampled_frame->format = output_codec_ctx->sample_fmt;
-                av_channel_layout_copy(&resampled_frame->ch_layout, &output_codec_ctx->ch_layout);
-                resampled_frame->nb_samples = frame->nb_samples;
-                av_frame_get_buffer(resampled_frame, 0);
-
-                swr_convert(resampler, resampled_frame->data, resampled_frame->nb_samples,
-                    (const uint8_t**)frame->data, frame->nb_samples);
-
-                // Encoding
-                avcodec_send_frame(output_codec_ctx, resampled_frame);
-                while (avcodec_receive_packet(output_codec_ctx, packet) >= 0) {
-                    av_interleaved_write_frame(output_format_ctx, packet);
-                    av_packet_unref(packet);
-                }
-
-                av_frame_free(&resampled_frame);
             }
+            av_packet_unref(packet);
         }
-        av_packet_unref(packet);
+
+        while (av_audio_fifo_size(fifo) > 0) {
+            int left_samples = av_audio_fifo_size(fifo) < output_codec_ctx->frame_size ? av_audio_fifo_size(fifo) : output_codec_ctx->frame_size;
+            AVFrame* encode_frame = av_frame_alloc();
+            encode_frame->sample_rate = output_codec_ctx->sample_rate;
+            encode_frame->format = output_codec_ctx->sample_fmt;
+            av_channel_layout_copy(&encode_frame->ch_layout, &output_codec_ctx->ch_layout);
+            encode_frame->nb_samples = left_samples;
+            av_frame_get_buffer(encode_frame, 0);
+
+            av_audio_fifo_read(fifo, (void**)encode_frame->data, left_samples);
+            encode_frame->pts = current_pts;
+            current_pts += encode_frame->nb_samples;
+
+            avcodec_send_frame(output_codec_ctx, encode_frame);
+            while (avcodec_receive_packet(output_codec_ctx, packet) >= 0) {
+                av_interleaved_write_frame(output_format_ctx, packet);
+                av_packet_unref(packet);
+            }
+            av_frame_free(&encode_frame);
+        }
+
+        avcodec_send_frame(output_codec_ctx, nullptr);
+        while (avcodec_receive_packet(output_codec_ctx, packet) >= 0) {
+            av_interleaved_write_frame(output_format_ctx, packet);
+            av_packet_unref(packet);
+        }
+
+        av_audio_fifo_free(fifo);
     }
 
-    // Finalize encoding
-    avcodec_send_frame(output_codec_ctx, nullptr);
-    while (avcodec_receive_packet(output_codec_ctx, packet) >= 0) {
-        av_interleaved_write_frame(output_format_ctx, packet);
-        av_packet_unref(packet);
-    }
-
-    // Write file trailer
     av_write_trailer(output_format_ctx);
 
-    cleanup:
+cleanup:
     avformat_close_input(&input_format_ctx);
     if (output_format_ctx && !(output_format_ctx->oformat->flags & AVFMT_NOFILE))
-    avio_closep(&output_format_ctx->pb);
+        avio_closep(&output_format_ctx->pb);
     avformat_free_context(output_format_ctx);
     avcodec_free_context(&input_codec_ctx);
     avcodec_free_context(&output_codec_ctx);
@@ -225,7 +263,7 @@ static int wav_to_mp3(char* inputfile, char* outputfile) {
 
     std::cout << "Done!\n";
     return ret < 0 ? 1 : 0;
-    }
+}
 
 //Transfer one mp3 into another file
 static std::string OneMp3ToOther(const std::string& input_file, const std::string& output_file) {
@@ -381,17 +419,15 @@ int main() {
             PrintInfoAboutFile(InputFilePath);
         }
         else if (ans == 2) {
-            if (OutputFilePath == "") {
-                std::cout << "Enter path to your output file(.mp3): ";
-                OutputFilePath = GetFileDirectory();
-            }
-                wav_to_mp3(InputFilePath.data(), OutputFilePath.data());
+            fs::path AutoOutPath = InputFilePath;
+            AutoOutPath.replace_extension(".mp3");
+            OutputFilePath = AutoOutPath.string();
+            wav_to_mp3(InputFilePath.data(), OutputFilePath.data());
         }
         else if (ans == 3) {
-            if (OutputFilePath == "") {
-                std::cout << "Enter path to your output file(.mp3): ";
-                OutputFilePath = GetFileDirectory();
-            }
+            fs::path AutoOutPath = InputFilePath;
+            AutoOutPath.replace_extension(".mp3");
+            OutputFilePath = AutoOutPath.string();
             wav_to_mp3(InputFilePath.data(), OutputFilePath.data());
         }
         else if (ans == 4) {
