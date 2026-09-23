@@ -5,9 +5,6 @@
 #include <fstream>
 #include <future>
 #include <clocale>
-#include <json.hpp>
-#include <Windows.h>
-#include <io.h>
 #include <fcntl.h>
 #undef max
 extern "C" {
@@ -20,16 +17,6 @@ extern "C" {
 }
 
 namespace fs = std::filesystem;
-using json = nlohmann::json;
-
-json loadTranslations(const std::string& filename) {
-    setlocale(LC_ALL, "Russian");
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open translations file!");
-    }
-    return json::parse(file);
-}
 
 //Throws a string error
 static std::string ErrorOut() {
@@ -68,7 +55,7 @@ std::string GetFileDirectory() {
         std::cout << "Invalid file!" << std::endl;
         return ErrorOut();
     }
-    return dir + '\\' + filename;
+    return filePath.string();
 }
 
 //Converts PathToFile(.wav) into Outputfile(.mp3)
@@ -348,7 +335,7 @@ void PrintInfoAboutFile(fs::path filePath) {
     SNDFILE* snd_file;
 
     // Initialize the SF_INFO struct
-    std::memset(&sf_info, 0, sizeof(sf_info));
+    memset(&sf_info, 0, sizeof(sf_info));
 
     // Open the audio file for reading
     snd_file = sf_open(filePath.string().c_str(), SFM_READ, &sf_info);  // Convert path to c_str() here
@@ -369,24 +356,9 @@ void PrintInfoAboutFile(fs::path filePath) {
 
 int main() {
 
-    SetConsoleOutputCP(65001);
-    SetConsoleCP(65001);
-
-
-    std::system("chcp 1251");
-    setlocale(LC_ALL, "Russian");
-
     std::string InputFilePath = "";
     std::string OutputFilePath = "";
 
-    try {
-        json translations = loadTranslations("translations.json");
-        std::string lang = "ru";
-        std::cout << translations[lang]["welcome"] << std::endl;
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
 
     CVRTRtext();
 
@@ -423,9 +395,9 @@ int main() {
             wav_to_mp3(InputFilePath.data(), OutputFilePath.data());
         }
         else if (ans == 4) {
-            InputFilePath == "";
+            InputFilePath = "";
             std::cout << "Enter your input file directory(.wav or .mp3): ";
-            std::string InputFilePath = GetFileDirectory();
+            InputFilePath = GetFileDirectory();
         }
         else if (ans == 0) {
             break;

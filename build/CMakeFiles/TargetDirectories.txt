@@ -1,0 +1,3 @@
+/home/zvp/Documents/GitHub/CVRTR/build/CMakeFiles/CVRTR.dir
+/home/zvp/Documents/GitHub/CVRTR/build/CMakeFiles/edit_cache.dir
+/home/zvp/Documents/GitHub/CVRTR/build/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/zvp/Documents/GitHub/CVRTR/build",
+  "command": "/usr/bin/clang++ -I/usr/include/opus -g -std=gnu++17 -o CMakeFiles/CVRTR.dir/music_input_export/Source1.cpp.o -c /home/zvp/Documents/GitHub/CVRTR/music_input_export/Source1.cpp",
+  "file": "/home/zvp/Documents/GitHub/CVRTR/music_input_export/Source1.cpp",
+  "output": "/home/zvp/Documents/GitHub/CVRTR/build/CMakeFiles/CVRTR.dir/music_input_export/Source1.cpp.o"
+}
+]
