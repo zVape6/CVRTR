@@ -260,7 +260,7 @@ cleanup:
     return ret < 0 ? 1 : 0;
 }
 
-// Converts wav to mp3
+// Converts mp3 to wav
 static int mp3_to_wav(char* inputfile, char* outputfile) {
     char* input_filename = inputfile;
     char* output_filename = outputfile;
@@ -416,94 +416,91 @@ cleanup:
     return ret < 0 ? 1 : 0;
 }
 
-//Transfer one mp3 into another file
-static std::string OneMp3ToOther(const std::string& input_file, const std::string& output_file) {
-    avformat_network_init();
-
+// Creates a copy of your chosen file with "_copy" at the end
+static std::string CopyAudioFile(const std::string& input_file, const std::string& output_file) {
     AVFormatContext* input_format_context = nullptr;
+    AVFormatContext* output_format_context = nullptr;
+    AVPacket* packet = av_packet_alloc();
+    int ret;
+
     if (avformat_open_input(&input_format_context, input_file.c_str(), nullptr, nullptr) != 0) {
-        std::cerr << "Could not open input file." << std::endl;
+        std::cerr << "Could not open input file.\n";
         return ErrorOut();
     }
 
     if (avformat_find_stream_info(input_format_context, nullptr) < 0) {
-        std::cerr << "Could not find stream information." << std::endl;
+        std::cerr << "Could not find stream information.\n";
+        avformat_close_input(&input_format_context);
         return ErrorOut();
     }
 
-    int audio_stream_index = -1;
-    for (int i = 0; i < input_format_context->nb_streams; i++) {
-        if (input_format_context->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            audio_stream_index = i;
-            break;
-        }
+    int audio_stream_index = av_find_best_stream(input_format_context, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+    if (audio_stream_index < 0) {
+        std::cerr << "Could not find audio stream.\n";
+        avformat_close_input(&input_format_context);
+        return ErrorOut();
     }
+    AVStream* in_stream = input_format_context->streams[audio_stream_index];
 
-    if (audio_stream_index == -1) {
-        std::cerr << "Could not find audio stream." << std::endl;
+    avformat_alloc_output_context2(&output_format_context, nullptr, nullptr, output_file.c_str());
+    if (!output_format_context) {
+        std::cerr << "Could not create output context.\n";
+        avformat_close_input(&input_format_context);
         return ErrorOut();
     }
 
-    AVStream* audio_stream = input_format_context->streams[audio_stream_index];
-    const AVCodec* audio_codec = avcodec_find_decoder(audio_stream->codecpar->codec_id);
-    if (!audio_codec) {
-        std::cerr << "Could not find codec." << std::endl;
+    AVStream* out_stream = avformat_new_stream(output_format_context, nullptr);
+    if (!out_stream) {
+        std::cerr << "Failed allocating output stream.\n";
+        avformat_free_context(output_format_context);
+        avformat_close_input(&input_format_context);
         return ErrorOut();
     }
 
-    AVCodecContext* codec_context = avcodec_alloc_context3(audio_codec);
-    if (avcodec_parameters_to_context(codec_context, audio_stream->codecpar) < 0) {
-        std::cerr << "Could not copy codec parameters." << std::endl;
-        return ErrorOut();
+    ret = avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
+    if (ret < 0) {
+        std::cerr << "Failed to copy codec parameters.\n";
+        goto end;
     }
-
-    if (avcodec_open2(codec_context, audio_codec, nullptr) < 0) {
-        std::cerr << "Could not open codec." << std::endl;
-        return ErrorOut();
-    }
-
-    // Open input file
-    AVFormatContext* output_format_context = nullptr;
-    if (avformat_alloc_output_context2(&output_format_context, nullptr, nullptr, output_file.c_str()) < 0) {
-        std::cerr << "Could not create output context." << std::endl;
-        return ErrorOut();
-    }
-
-    AVStream* output_stream = avformat_new_stream(output_format_context, nullptr);
-    if (avcodec_parameters_copy(output_stream->codecpar, audio_stream->codecpar) < 0) {
-        std::cerr << "Could not copy codec parameters to output file." << std::endl;
-        return ErrorOut();
-    }
+    out_stream->codecpar->codec_tag = 0;
 
     if (!(output_format_context->oformat->flags & AVFMT_NOFILE)) {
-        if (avio_open(&output_format_context->pb, output_file.c_str(), AVIO_FLAG_WRITE) < 0) {
-            std::cerr << "Could not open output file." << std::endl;
-            return ErrorOut();
+        ret = avio_open(&output_format_context->pb, output_file.c_str(), AVIO_FLAG_WRITE);
+        if (ret < 0) {
+            std::cerr << "Could not open output file.\n";
+            goto end;
         }
     }
 
-    if (avformat_write_header(output_format_context, nullptr) < 0) {
-        std::cerr << "Could not write header to output file." << std::endl;
-        return ErrorOut();
+    ret = avformat_write_header(output_format_context, nullptr);
+    if (ret < 0) {
+        std::cerr << "Error occurred when opening output file.\n";
+        goto end;
     }
 
-    // Reading and writing audio packets
-    AVPacket packet;
-    while (av_read_frame(input_format_context, &packet) >= 0) {
-        if (packet.stream_index == audio_stream_index) {
-            av_write_frame(output_format_context, &packet);
+    while (av_read_frame(input_format_context, packet) >= 0) {
+        if (packet->stream_index == audio_stream_index) {
+            av_packet_rescale_ts(packet, in_stream->time_base, out_stream->time_base);
+            packet->stream_index = out_stream->index;
+            
+            ret = av_interleaved_write_frame(output_format_context, packet);
+            if (ret < 0) {
+                std::cerr << "Error muxing packet\n";
+                break;
+            }
         }
-        av_packet_unref(&packet);
+        av_packet_unref(packet);
     }
-
     av_write_trailer(output_format_context);
 
-    // clear
-    avcodec_free_context(&codec_context);
-    avformat_close_input(&input_format_context);
+end:
+    if (output_format_context && !(output_format_context->oformat->flags & AVFMT_NOFILE))
+    avio_closep(&output_format_context->pb);
     avformat_free_context(output_format_context);
+    avformat_close_input(&input_format_context);
+    av_packet_free(&packet);
 
-    std::cout << "Conversion complete!" << std::endl;
+    std::cout << "Copy complete!\n";
     return "Done!";
 }
 
@@ -560,7 +557,7 @@ int main() {
         std::cout << "What do you want to do with file?\n";
         std::cout << "1. Get info about file\n" <<
             "2. Convert .wav file into .mp3\n" <<
-            "3. Transfer .mp3 file into another .mp3\n" <<
+            "3. Copy your music file (.mp3 and .wav) and saves it to the same direction\n" <<
             "4. If you want to change input file(.wav or .mp3)\n" <<
             "5. Converts .mp3 file into .wav\n" << 
             "Press 0 if you want to quit\n";
@@ -578,9 +575,13 @@ int main() {
         }
         else if (ans == 3) {
             fs::path AutoOutPath = InputFilePath;
-            AutoOutPath.replace_extension(".mp3");
+            std::string original_stem = AutoOutPath.stem().string();
+            std::string ExtensionOfTheOriginalFile = AutoOutPath.extension().string();
+
+            AutoOutPath.replace_filename(original_stem + "_copy" + ExtensionOfTheOriginalFile);
             OutputFilePath = AutoOutPath.string();
-            OneMp3ToOther(InputFilePath.data(), OutputFilePath.data());
+
+            CopyAudioFile(InputFilePath, OutputFilePath);
         }
         else if (ans == 4) {
             InputFilePath = "";
