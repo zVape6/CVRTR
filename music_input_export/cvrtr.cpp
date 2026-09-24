@@ -26,37 +26,39 @@ static std::string ErrorOut() {
 
 //Function to get files full path
 std::string GetFileDirectory() {
-    // Ask user to enter the directory where the file is located
     std::string dir;
-    std::getline(std::cin, dir);
 
-    // Check if the directory exists
-    if (!fs::exists(dir) || !fs::is_directory(dir)) {
-        std::cout << "Invalid directory!" << std::endl;
-        return ErrorOut();
+    while (true) {
+        std::getline(std::cin, dir);
+
+        if (!fs::exists(dir) || !fs::is_directory(dir)) {
+            std::cout << ErrorOut() << " Invalid directory! Try again.\n";
+            std::cout << "Enter your input file directory(.wav or .mp3): ";
+            continue; 
+        }
+        
+        break; 
     }
 
-    // List all files in the directory
     std::cout << "Files in directory: " << std::endl;
     for (const auto& entry : fs::directory_iterator(dir)) {
-        // Print the filename directly as a string
         std::cout << entry.path().filename().string() << std::endl;
     }
 
-    // Ask user to choose a file
-    std::string filename;
-    std::cout << "Enter the filename (including extension) you want to open: ";
-    std::getline(std::cin, filename);
+    while (true) {
+        std::string filename;
+        std::cout << "Enter the filename (including extension) you want to open: ";
+        std::getline(std::cin, filename);
 
-    // Full path to the file
-    fs::path filePath = fs::path(dir) / filename;
+        fs::path filePath = fs::path(dir) / filename;
 
-    // Check if the file exists
-    if (!fs::exists(filePath) || !fs::is_regular_file(filePath)) {
-        std::cout << "Invalid file!" << std::endl;
-        return ErrorOut();
+        if (!fs::exists(filePath) || !fs::is_regular_file(filePath)) {
+            std::cout << ErrorOut() << " Invalid file! Try again.\n";
+            continue;
+        }
+
+        return filePath.string();
     }
-    return filePath.string();
 }
 
 //Converts PathToFile(.wav) into Outputfile(.mp3)
