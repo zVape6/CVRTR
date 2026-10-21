@@ -361,3 +361,26 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Сборка CMake
+build/
+bin/
+out/
+CMakeFiles/
+CMakeCache.txt
+*.cmake
+!CMakeLists.txt
+
+# Артефакты компиляции
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+
+# Среды разработки
+.vscode/
+.vs/
+.idea/
+*.user
