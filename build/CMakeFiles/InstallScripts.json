@@ -1,7 +1,10 @@
 {
 	"InstallScripts" : 
 	[
-		"/home/zvp/Documents/GitHub/CVRTR/build/cmake_install.cmake"
+		"/home/zvp/Documents/GitHub/CVRTR/build/cmake_install.cmake",
+		"/home/zvp/Documents/GitHub/CVRTR/build/_deps/glfw-build/cmake_install.cmake",
+		"/home/zvp/Documents/GitHub/CVRTR/build/_deps/glfw-build/src/cmake_install.cmake",
+		"/home/zvp/Documents/GitHub/CVRTR/build/_deps/pfd-build/cmake_install.cmake"
 	],
 	"Parallel" : false
 }

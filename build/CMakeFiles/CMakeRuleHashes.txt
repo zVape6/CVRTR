@@ -1,0 +1,21 @@
+# Hashes of file build rules.
+20e75631f8505f4df91723c013f0fe99 _deps/glfw-build/CMakeFiles/uninstall
+dc0bed22937b618b3257aa4f7b4be85d _deps/glfw-build/src/CMakeFiles/update_mappings
+ab3aea0a216c1f29888a5d1f06aefd49 _deps/glfw-build/src/fractional-scale-v1-client-protocol-code.h
+4566728290db088382824b7fca199abf _deps/glfw-build/src/fractional-scale-v1-client-protocol.h
+6cad1ecc65523cf4adc791fbf9a95712 _deps/glfw-build/src/idle-inhibit-unstable-v1-client-protocol-code.h
+d8782618bc8d42abc003b40a38de0dfd _deps/glfw-build/src/idle-inhibit-unstable-v1-client-protocol.h
+12f6fb2f5e8b058212ee03d396b40b36 _deps/glfw-build/src/pointer-constraints-unstable-v1-client-protocol-code.h
+41290443fef401354384737db39d7ae8 _deps/glfw-build/src/pointer-constraints-unstable-v1-client-protocol.h
+203aa9585ad51434f9e3b922d4f7b716 _deps/glfw-build/src/relative-pointer-unstable-v1-client-protocol-code.h
+87682abef4eb115d2446bef73ef81887 _deps/glfw-build/src/relative-pointer-unstable-v1-client-protocol.h
+de1c9e605ba4dc8a498302ea8c1c18b6 _deps/glfw-build/src/viewporter-client-protocol-code.h
+370d174d5ef8a3f702a30185c9186c4d _deps/glfw-build/src/viewporter-client-protocol.h
+84b25d1126070396ddc5317d9b91f221 _deps/glfw-build/src/wayland-client-protocol-code.h
+56d4cd645ec48ee8a30fca1172b7d318 _deps/glfw-build/src/wayland-client-protocol.h
+316e377ba18569e0d29e7ab69a31d12b _deps/glfw-build/src/xdg-activation-v1-client-protocol-code.h
+3b54a17f47d320bc90c2798f8585c389 _deps/glfw-build/src/xdg-activation-v1-client-protocol.h
+ebad93be847837a581b7933ec33e368e _deps/glfw-build/src/xdg-decoration-unstable-v1-client-protocol-code.h
+48ed62fa823423592ac3de42ded04809 _deps/glfw-build/src/xdg-decoration-unstable-v1-client-protocol.h
+f74c900849bc94b4e2c5924cbbcec85a _deps/glfw-build/src/xdg-shell-client-protocol-code.h
+2b99ab3ad0179533944d06f6fcdf2878 _deps/glfw-build/src/xdg-shell-client-protocol.h

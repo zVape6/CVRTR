@@ -1,0 +1,14 @@
+# Target labels
+ imgui-populate
+# Source files and their labels
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/CMakeFiles/imgui-populate
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/CMakeFiles/imgui-populate.rule
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/CMakeFiles/imgui-populate-complete.rule
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/imgui-populate-prefix/src/imgui-populate-stamp/imgui-populate-build.rule
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/imgui-populate-prefix/src/imgui-populate-stamp/imgui-populate-configure.rule
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/imgui-populate-prefix/src/imgui-populate-stamp/imgui-populate-download.rule
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/imgui-populate-prefix/src/imgui-populate-stamp/imgui-populate-install.rule
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/imgui-populate-prefix/src/imgui-populate-stamp/imgui-populate-mkdir.rule
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/imgui-populate-prefix/src/imgui-populate-stamp/imgui-populate-patch.rule
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/imgui-populate-prefix/src/imgui-populate-stamp/imgui-populate-test.rule
+/home/zvp/Documents/GitHub/CVRTR/build/_deps/imgui-subbuild/imgui-populate-prefix/src/imgui-populate-stamp/imgui-populate-update.rule

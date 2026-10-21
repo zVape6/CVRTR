@@ -19,9 +19,54 @@ extern "C" {
 
 namespace fs = std::filesystem;
 
-//Throws a string error
-static std::string ErrorOut() {
-    return "Error!";
+static int SetupMetadataAndCover(AVFormatContext* in_ctx, AVFormatContext* out_ctx) {
+    // Копируем основные метаданные контейнера
+    av_dict_copy(&out_ctx->metadata, in_ctx->metadata, AV_DICT_DONT_OVERWRITE);
+
+    for (unsigned int i = 0; i < in_ctx->nb_streams; i++) {
+        if (in_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && out_ctx->nb_streams > 0) {
+            av_dict_copy(&out_ctx->streams[0]->metadata, in_ctx->streams[i]->metadata, AV_DICT_DONT_OVERWRITE);
+            break;
+        }
+    }
+
+    if (out_ctx->oformat && out_ctx->oformat->name && std::string(out_ctx->oformat->name) == "wav") {
+        return -1;
+    }
+
+    for (unsigned int i = 0; i < in_ctx->nb_streams; i++) {
+        AVStream* in_stream = in_ctx->streams[i];
+        if ((in_stream->disposition & AV_DISPOSITION_ATTACHED_PIC) && in_stream->attached_pic.size > 0) {
+            AVStream* out_pic_stream = avformat_new_stream(out_ctx, nullptr);
+            if (!out_pic_stream) return -1;
+
+            avcodec_parameters_copy(out_pic_stream->codecpar, in_stream->codecpar);
+            out_pic_stream->codecpar->codec_tag = 0;
+            out_pic_stream->disposition = in_stream->disposition;
+            out_pic_stream->time_base = in_stream->time_base;
+            av_dict_copy(&out_pic_stream->metadata, in_stream->metadata, AV_DICT_DONT_OVERWRITE);
+
+            return out_pic_stream->index;
+        }
+    }
+    return -1;
+}
+
+static void WriteCoverPacket(AVFormatContext* in_ctx, AVFormatContext* out_ctx, int out_pic_stream_idx) {
+    if (out_pic_stream_idx < 0) return;
+
+    for (unsigned int i = 0; i < in_ctx->nb_streams; i++) {
+        AVStream* in_stream = in_ctx->streams[i];
+        if ((in_stream->disposition & AV_DISPOSITION_ATTACHED_PIC) && in_stream->attached_pic.size > 0) {
+            AVPacket* pkt = av_packet_clone(&in_stream->attached_pic);
+            if (pkt) {
+                pkt->stream_index = out_pic_stream_idx;
+                av_interleaved_write_frame(out_ctx, pkt);
+                av_packet_free(&pkt);
+            }
+            break;
+        }
+    }
 }
 
 //Function to get files full path
@@ -32,7 +77,7 @@ std::string GetFileDirectory() {
         std::getline(std::cin, dir);
 
         if (!fs::exists(dir) || !fs::is_directory(dir)) {
-            std::cout << ErrorOut() << " Invalid directory! Try again.\n";
+            std::cout << " Invalid directory! Try again.\n";
             std::cout << "Enter your input file directory(.wav or .mp3): ";
             continue; 
         }
@@ -53,7 +98,7 @@ std::string GetFileDirectory() {
         fs::path filePath = fs::path(dir) / filename;
 
         if (!fs::exists(filePath) || !fs::is_regular_file(filePath)) {
-            std::cout << ErrorOut() << " Invalid file! Try again.\n";
+            std::cout << " Invalid file! Try again.\n";
             continue;
         }
 
@@ -62,7 +107,7 @@ std::string GetFileDirectory() {
 }
 
 //Converts PathToFile(.wav) into Outputfile(.mp3)
-static int wav_to_mp3(char* inputfile, char* outputfile) {
+int wav_to_mp3(char* inputfile, char* outputfile) {
 
     char* input_filename = inputfile;
     char* output_filename = outputfile;
@@ -145,10 +190,14 @@ static int wav_to_mp3(char* inputfile, char* outputfile) {
         }
     }
 
+    int cover_idx = SetupMetadataAndCover(input_format_ctx, output_format_ctx);
+
     if ((ret = avformat_write_header(output_format_ctx, nullptr)) < 0) {
         std::cerr << "Failed to write header\n";
         goto cleanup;
     }
+
+    WriteCoverPacket(input_format_ctx, output_format_ctx, cover_idx);
 
     swr_alloc_set_opts2(&resampler,
         &output_codec_ctx->ch_layout,
@@ -243,9 +292,10 @@ static int wav_to_mp3(char* inputfile, char* outputfile) {
 
         av_audio_fifo_free(fifo);
     }
-
+    
     av_write_trailer(output_format_ctx);
-
+    
+    ret = 0;
 
 cleanup:
     avformat_close_input(&input_format_ctx);
@@ -263,7 +313,7 @@ cleanup:
 }
 
 // Converts mp3 to wav
-static int mp3_to_wav(char* inputfile, char* outputfile) {
+int mp3_to_wav(char* inputfile, char* outputfile) {
     char* input_filename = inputfile;
     char* output_filename = outputfile;
 
@@ -342,10 +392,14 @@ static int mp3_to_wav(char* inputfile, char* outputfile) {
         }
     }
 
+    int cover_idx = SetupMetadataAndCover(input_format_ctx, output_format_ctx);
+
     if ((ret = avformat_write_header(output_format_ctx, nullptr)) < 0) {
         std::cerr << "Failed to write header\n";
         goto cleanup;
     }
+
+    WriteCoverPacket(input_format_ctx, output_format_ctx, cover_idx);
 
     swr_alloc_set_opts2(&resampler,
         &output_codec_ctx->ch_layout,
@@ -400,8 +454,10 @@ static int mp3_to_wav(char* inputfile, char* outputfile) {
             av_packet_unref(packet);
         }
     }
-
+    
     av_write_trailer(output_format_ctx);
+
+    ret = 0;
 
 cleanup:
     avformat_close_input(&input_format_ctx);
@@ -419,7 +475,7 @@ cleanup:
 }
 
 // Creates a copy of your chosen file with "_copy" at the end
-static std::string CopyAudioFile(const std::string& input_file, const std::string& output_file) {
+std::string CopyAudioFile(const std::string& input_file, const std::string& output_file) {
     AVFormatContext* input_format_context = nullptr;
     AVFormatContext* output_format_context = nullptr;
     AVPacket* packet = av_packet_alloc();
@@ -427,20 +483,17 @@ static std::string CopyAudioFile(const std::string& input_file, const std::strin
 
     if (avformat_open_input(&input_format_context, input_file.c_str(), nullptr, nullptr) != 0) {
         std::cerr << "Could not open input file.\n";
-        return ErrorOut();
     }
 
     if (avformat_find_stream_info(input_format_context, nullptr) < 0) {
         std::cerr << "Could not find stream information.\n";
         avformat_close_input(&input_format_context);
-        return ErrorOut();
     }
 
     int audio_stream_index = av_find_best_stream(input_format_context, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
     if (audio_stream_index < 0) {
         std::cerr << "Could not find audio stream.\n";
         avformat_close_input(&input_format_context);
-        return ErrorOut();
     }
     AVStream* in_stream = input_format_context->streams[audio_stream_index];
 
@@ -448,7 +501,6 @@ static std::string CopyAudioFile(const std::string& input_file, const std::strin
     if (!output_format_context) {
         std::cerr << "Could not create output context.\n";
         avformat_close_input(&input_format_context);
-        return ErrorOut();
     }
 
     AVStream* out_stream = avformat_new_stream(output_format_context, nullptr);
@@ -456,7 +508,6 @@ static std::string CopyAudioFile(const std::string& input_file, const std::strin
         std::cerr << "Failed allocating output stream.\n";
         avformat_free_context(output_format_context);
         avformat_close_input(&input_format_context);
-        return ErrorOut();
     }
 
     ret = avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
@@ -474,11 +525,15 @@ static std::string CopyAudioFile(const std::string& input_file, const std::strin
         }
     }
 
+    int cover_idx = SetupMetadataAndCover(input_format_context, output_format_context);
+
     ret = avformat_write_header(output_format_context, nullptr);
     if (ret < 0) {
         std::cerr << "Error occurred when opening output file.\n";
         goto end;
     }
+
+    WriteCoverPacket(input_format_context, output_format_context, cover_idx);
 
     while (av_read_frame(input_format_context, packet) >= 0) {
         if (packet->stream_index == audio_stream_index) {
@@ -540,65 +595,4 @@ void PrintInfoAboutFile(fs::path filePath) {
 
     // Close the file
     sf_close(snd_file);
-}
-
-int main() {
-
-    std::string InputFilePath = "";
-    std::string OutputFilePath = "";
-
-
-    CVRTRtext();
-
-
-    std::cout << "Enter your input file directory(.wav or .mp3): ";
-    InputFilePath = GetFileDirectory();
-    fs::path PathToFilePath = InputFilePath;
-
-    while (true) {
-        std::cout << "What do you want to do with file?\n";
-        std::cout << "1. Get info about file\n" <<
-            "2. Convert .wav file into .mp3\n" <<
-            "3. Copy your music file (.mp3 and .wav) and saves it to the same direction\n" <<
-            "4. If you want to change input file(.wav or .mp3)\n" <<
-            "5. Converts .mp3 file into .wav\n" << 
-            "Press 0 if you want to quit\n";
-        int ans = 0;
-        std::cin >> ans;
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        if (ans == 1) {
-            PrintInfoAboutFile(InputFilePath);
-        }
-        else if (ans == 2) {
-            fs::path AutoOutPath = InputFilePath;
-            AutoOutPath.replace_extension(".mp3");
-            OutputFilePath = AutoOutPath.string();
-            wav_to_mp3(InputFilePath.data(), OutputFilePath.data());
-        }
-        else if (ans == 3) {
-            fs::path AutoOutPath = InputFilePath;
-            std::string original_stem = AutoOutPath.stem().string();
-            std::string ExtensionOfTheOriginalFile = AutoOutPath.extension().string();
-
-            AutoOutPath.replace_filename(original_stem + "_copy" + ExtensionOfTheOriginalFile);
-            OutputFilePath = AutoOutPath.string();
-
-            CopyAudioFile(InputFilePath, OutputFilePath);
-        }
-        else if (ans == 4) {
-            InputFilePath = "";
-            std::cout << "Enter your input file directory(.wav or .mp3): ";
-            InputFilePath = GetFileDirectory();
-        }
-        else if (ans == 5){
-            fs::path AutoOutPath = InputFilePath;
-            AutoOutPath.replace_extension(".wav");
-            OutputFilePath = AutoOutPath.string();
-            mp3_to_wav(InputFilePath.data(), OutputFilePath.data());
-        }
-        else if (ans == 0) {
-            break;
-        }
-    }
-    return 0;
 }

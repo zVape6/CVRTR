@@ -23,8 +23,8 @@ CMAKE_AR:FILEPATH=/usr/bin/ar
 //No help, variable specified on the command line.
 CMAKE_BUILD_TYPE:STRING=Debug
 
-//No help, variable specified on the command line.
-CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/clang++
+//CXX compiler
+CMAKE_CXX_COMPILER:STRING=/usr/bin/clang++
 
 //LLVM archiver
 CMAKE_CXX_COMPILER_AR:FILEPATH=/usr/bin/llvm-ar-21
@@ -50,8 +50,8 @@ CMAKE_CXX_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
 //Flags used by the CXX compiler during RELWITHDEBINFO builds.
 CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
-//No help, variable specified on the command line.
-CMAKE_C_COMPILER:FILEPATH=/usr/bin/clang
+//C compiler
+CMAKE_C_COMPILER:STRING=/usr/bin/clang
 
 //LLVM archiver
 CMAKE_C_COMPILER_AR:FILEPATH=/usr/bin/llvm-ar-21
@@ -231,29 +231,34 @@ CVRTR_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 CVRTR_SOURCE_DIR:STATIC=/home/zvp/Documents/GitHub/CVRTR
 
-//Arguments to supply to pkg-config
-PKG_CONFIG_ARGN:STRING=
+//Directory under which to collect all populated content
+FETCHCONTENT_BASE_DIR:PATH=/home/zvp/Documents/GitHub/CVRTR/build/_deps
 
-//pkg-config executable
-PKG_CONFIG_EXECUTABLE:FILEPATH=/usr/bin/pkg-config
+//Disables all attempts to download or update content and assumes
+// source dirs already exist
+FETCHCONTENT_FULLY_DISCONNECTED:BOOL=OFF
 
-//Path to a library.
-pkgcfg_lib_FFMPEG_avcodec:FILEPATH=/usr/lib/x86_64-linux-gnu/libavcodec.so
+//Enables QUIET option for all content population
+FETCHCONTENT_QUIET:BOOL=ON
 
-//Path to a library.
-pkgcfg_lib_FFMPEG_avformat:FILEPATH=/usr/lib/x86_64-linux-gnu/libavformat.so
+//When not empty, overrides where to find pre-populated content
+// for glfw
+FETCHCONTENT_SOURCE_DIR_GLFW:PATH=
 
-//Path to a library.
-pkgcfg_lib_FFMPEG_avutil:FILEPATH=/usr/lib/x86_64-linux-gnu/libavutil.so
+//Enables UPDATE_DISCONNECTED behavior for all content population
+FETCHCONTENT_UPDATES_DISCONNECTED:BOOL=OFF
 
-//Path to a library.
-pkgcfg_lib_FFMPEG_swresample:FILEPATH=/usr/lib/x86_64-linux-gnu/libswresample.so
+//Enables UPDATE_DISCONNECTED behavior just for population of glfw
+FETCHCONTENT_UPDATES_DISCONNECTED_GLFW:BOOL=OFF
 
-//Path to a library.
-pkgcfg_lib_FFMPEG_swscale:FILEPATH=/usr/lib/x86_64-linux-gnu/libswscale.so
+//Git command line client
+GIT_EXECUTABLE:FILEPATH=/usr/bin/git
 
-//Path to a library.
-pkgcfg_lib_SNDFILE_sndfile:FILEPATH=/usr/lib/x86_64-linux-gnu/libsndfile.so
+GLFW_BUILD_DOCS:BOOL=OFF
+
+GLFW_BUILD_EXAMPLES:BOOL=OFF
+
+GLFW_BUILD_TESTS:BOOL=OFF
 
 
 ########################
@@ -409,118 +414,6 @@ CMAKE_TAPI-ADVANCED:INTERNAL=1
 CMAKE_UNAME:INTERNAL=/usr/bin/uname
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
-FFMPEG_CFLAGS:INTERNAL=-I/usr/include/x86_64-linux-gnu
-FFMPEG_CFLAGS_I:INTERNAL=
-FFMPEG_CFLAGS_OTHER:INTERNAL=
-FFMPEG_FOUND:INTERNAL=1
-FFMPEG_INCLUDEDIR:INTERNAL=
-FFMPEG_INCLUDE_DIRS:INTERNAL=/usr/include/x86_64-linux-gnu
-FFMPEG_LDFLAGS:INTERNAL=-L/usr/lib/x86_64-linux-gnu;-lavformat;-lavcodec;-lswscale;-lswresample;-lavutil
-FFMPEG_LDFLAGS_OTHER:INTERNAL=
-FFMPEG_LIBDIR:INTERNAL=
-FFMPEG_LIBRARIES:INTERNAL=avformat;avcodec;swscale;swresample;avutil
-FFMPEG_LIBRARY_DIRS:INTERNAL=/usr/lib/x86_64-linux-gnu
-FFMPEG_LIBS:INTERNAL=
-FFMPEG_LIBS_L:INTERNAL=
-FFMPEG_LIBS_OTHER:INTERNAL=
-FFMPEG_LIBS_PATHS:INTERNAL=
-FFMPEG_MODULE_NAME:INTERNAL=
-FFMPEG_PREFIX:INTERNAL=
-FFMPEG_STATIC_CFLAGS:INTERNAL=-I/usr/include/x86_64-linux-gnu
-FFMPEG_STATIC_CFLAGS_I:INTERNAL=
-FFMPEG_STATIC_CFLAGS_OTHER:INTERNAL=
-FFMPEG_STATIC_INCLUDE_DIRS:INTERNAL=/usr/include/x86_64-linux-gnu
-FFMPEG_STATIC_LDFLAGS:INTERNAL=-L/usr/lib/x86_64-linux-gnu;-lavformat;-lm;-latomic;-lxml2;-lbz2;-ldvdnav;-ldvdread;-lgme;-lopenmpt;-lstdc++;-lchromaprint;-lbluray;-lz;-lgnutls;-lrabbitmq;-lrist;-lsrt-gnutls;-lssh;-lzmq;-lavcodec;-lvpx;-lm;-lvpx;-lm;-lvpx;-lm;-lvpx;-lm;-lwebpmux;-pthread;-lm;-latomic;-llzma;-ldav1d;-lrsvg-2;-lgdk_pixbuf-2.0;-lgio-2.0;-lcairo;-lgobject-2.0;-lglib-2.0;-lzvbi;-lpthread;-lm;-lpng;-lz;-lsnappy;-lstdc++;-laom;-lcodec2;-lgsm;-ljxl;-ljxl_threads;-lmp3lame;-lm;-lopenjp2;-lopus;-lrav1e;-lm;-lshine;-lspeex;-lSvtAv1Enc;-ltheoraenc;-ltheoradec;-logg;-ltwolame;-lvorbis;-lvorbisenc;-lwebp;-lx264;-lx265;-lxvidcore;-lz;-lva;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lswscale;-lm;-latomic;-lglslang;-lMachineIndependent;-lGenericCodeGen;-lSPIRV;-lSPIRV-Tools-opt;-lSPIRV-Tools;-lstdc++;-lm;-pthread;-lswresample;-lm;-lsoxr;-latomic;-lavutil;-lva-drm;-lva;-lva-x11;-lva;-lvdpau;-lX11;-lm;-lz;-ldrm;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lOpenCL;-lva;-latomic;-pthread;-lX11
-FFMPEG_STATIC_LDFLAGS_OTHER:INTERNAL=-pthread;-pthread;-pthread
-FFMPEG_STATIC_LIBDIR:INTERNAL=
-FFMPEG_STATIC_LIBRARIES:INTERNAL=avformat;m;atomic;xml2;bz2;dvdnav;dvdread;gme;openmpt;stdc++;chromaprint;bluray;z;gnutls;rabbitmq;rist;srt-gnutls;ssh;zmq;avcodec;vpx;m;vpx;m;vpx;m;vpx;m;webpmux;m;atomic;lzma;dav1d;rsvg-2;gdk_pixbuf-2.0;gio-2.0;cairo;gobject-2.0;glib-2.0;zvbi;pthread;m;png;z;snappy;stdc++;aom;codec2;gsm;jxl;jxl_threads;mp3lame;m;openjp2;opus;rav1e;m;shine;speex;SvtAv1Enc;theoraenc;theoradec;ogg;twolame;vorbis;vorbisenc;webp;x264;x265;xvidcore;z;va;vpl;dl;swscale;m;atomic;glslang;MachineIndependent;GenericCodeGen;SPIRV;SPIRV-Tools-opt;SPIRV-Tools;stdc++;m;swresample;m;soxr;atomic;avutil;va-drm;va;va-x11;va;vdpau;X11;m;z;drm;vpl;dl;OpenCL;va;atomic;X11
-FFMPEG_STATIC_LIBRARY_DIRS:INTERNAL=/usr/lib/x86_64-linux-gnu;/usr/lib/x86_64-linux-gnu/pkgconfig/../;/usr/lib/x86_64-linux-gnu/pkgconfig/../
-FFMPEG_STATIC_LIBS:INTERNAL=
-FFMPEG_STATIC_LIBS_L:INTERNAL=
-FFMPEG_STATIC_LIBS_OTHER:INTERNAL=
-FFMPEG_STATIC_LIBS_PATHS:INTERNAL=
-FFMPEG_VERSION:INTERNAL=
-FFMPEG_libavcodec_INCLUDEDIR:INTERNAL=/usr/include/x86_64-linux-gnu
-FFMPEG_libavcodec_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
-FFMPEG_libavcodec_MODULE_NAME:INTERNAL=libavcodec
-FFMPEG_libavcodec_PREFIX:INTERNAL=/usr
-FFMPEG_libavcodec_VERSION:INTERNAL=62.28.102
-FFMPEG_libavformat_INCLUDEDIR:INTERNAL=/usr/include/x86_64-linux-gnu
-FFMPEG_libavformat_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
-FFMPEG_libavformat_MODULE_NAME:INTERNAL=libavformat
-FFMPEG_libavformat_PREFIX:INTERNAL=/usr
-FFMPEG_libavformat_VERSION:INTERNAL=62.12.102
-FFMPEG_libavutil_INCLUDEDIR:INTERNAL=/usr/include/x86_64-linux-gnu
-FFMPEG_libavutil_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
-FFMPEG_libavutil_MODULE_NAME:INTERNAL=libavutil
-FFMPEG_libavutil_PREFIX:INTERNAL=/usr
-FFMPEG_libavutil_VERSION:INTERNAL=60.26.102
-FFMPEG_libswresample_INCLUDEDIR:INTERNAL=/usr/include/x86_64-linux-gnu
-FFMPEG_libswresample_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
-FFMPEG_libswresample_MODULE_NAME:INTERNAL=libswresample
-FFMPEG_libswresample_PREFIX:INTERNAL=/usr
-FFMPEG_libswresample_VERSION:INTERNAL=6.3.102
-FFMPEG_libswscale_INCLUDEDIR:INTERNAL=/usr/include/x86_64-linux-gnu
-FFMPEG_libswscale_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
-FFMPEG_libswscale_MODULE_NAME:INTERNAL=libswscale
-FFMPEG_libswscale_PREFIX:INTERNAL=/usr
-FFMPEG_libswscale_VERSION:INTERNAL=9.5.102
-//Details about finding PkgConfig
-FIND_PACKAGE_MESSAGE_DETAILS_PkgConfig:INTERNAL=[/usr/bin/pkg-config][v2.5.1()]
-//ADVANCED property for variable: PKG_CONFIG_ARGN
-PKG_CONFIG_ARGN-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: PKG_CONFIG_EXECUTABLE
-PKG_CONFIG_EXECUTABLE-ADVANCED:INTERNAL=1
-SNDFILE_CFLAGS:INTERNAL=-I/usr/include;-I/usr/include/opus;-I/usr/include/x86_64-linux-gnu
-SNDFILE_CFLAGS_I:INTERNAL=
-SNDFILE_CFLAGS_OTHER:INTERNAL=
-SNDFILE_FOUND:INTERNAL=1
-SNDFILE_INCLUDEDIR:INTERNAL=/usr/include
-SNDFILE_INCLUDE_DIRS:INTERNAL=/usr/include;/usr/include/opus;/usr/include/x86_64-linux-gnu
-SNDFILE_LDFLAGS:INTERNAL=-L/usr/lib/x86_64-linux-gnu;-lsndfile
-SNDFILE_LDFLAGS_OTHER:INTERNAL=
-SNDFILE_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
-SNDFILE_LIBRARIES:INTERNAL=sndfile
-SNDFILE_LIBRARY_DIRS:INTERNAL=/usr/lib/x86_64-linux-gnu
-SNDFILE_LIBS:INTERNAL=
-SNDFILE_LIBS_L:INTERNAL=
-SNDFILE_LIBS_OTHER:INTERNAL=
-SNDFILE_LIBS_PATHS:INTERNAL=
-SNDFILE_MODULE_NAME:INTERNAL=sndfile
-SNDFILE_PREFIX:INTERNAL=/usr
-SNDFILE_STATIC_CFLAGS:INTERNAL=-I/usr/include;-I/usr/include/opus;-I/usr/include/x86_64-linux-gnu
-SNDFILE_STATIC_CFLAGS_I:INTERNAL=
-SNDFILE_STATIC_CFLAGS_OTHER:INTERNAL=
-SNDFILE_STATIC_INCLUDE_DIRS:INTERNAL=/usr/include;/usr/include/opus;/usr/include/x86_64-linux-gnu
-SNDFILE_STATIC_LDFLAGS:INTERNAL=-L/usr/lib/x86_64-linux-gnu;-lsndfile;-lmp3lame;-lFLAC;-lm;-lvorbisenc;-lvorbis;-lm;-logg;-lopus;-lm;-lmpg123;-lm
-SNDFILE_STATIC_LDFLAGS_OTHER:INTERNAL=
-SNDFILE_STATIC_LIBDIR:INTERNAL=
-SNDFILE_STATIC_LIBRARIES:INTERNAL=sndfile;mp3lame;FLAC;m;vorbisenc;vorbis;m;ogg;opus;m;mpg123;m
-SNDFILE_STATIC_LIBRARY_DIRS:INTERNAL=/usr/lib/x86_64-linux-gnu
-SNDFILE_STATIC_LIBS:INTERNAL=
-SNDFILE_STATIC_LIBS_L:INTERNAL=
-SNDFILE_STATIC_LIBS_OTHER:INTERNAL=
-SNDFILE_STATIC_LIBS_PATHS:INTERNAL=
-SNDFILE_VERSION:INTERNAL=1.2.2
-SNDFILE_sndfile_INCLUDEDIR:INTERNAL=
-SNDFILE_sndfile_LIBDIR:INTERNAL=
-SNDFILE_sndfile_PREFIX:INTERNAL=
-SNDFILE_sndfile_VERSION:INTERNAL=
-__pkg_config_arguments_FFMPEG:INTERNAL=REQUIRED;libavcodec;libavformat;libavutil;libswscale;libswresample
-__pkg_config_arguments_SNDFILE:INTERNAL=REQUIRED;sndfile
-__pkg_config_checked_FFMPEG:INTERNAL=1
-__pkg_config_checked_SNDFILE:INTERNAL=1
-//ADVANCED property for variable: pkgcfg_lib_FFMPEG_avcodec
-pkgcfg_lib_FFMPEG_avcodec-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: pkgcfg_lib_FFMPEG_avformat
-pkgcfg_lib_FFMPEG_avformat-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: pkgcfg_lib_FFMPEG_avutil
-pkgcfg_lib_FFMPEG_avutil-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: pkgcfg_lib_FFMPEG_swresample
-pkgcfg_lib_FFMPEG_swresample-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: pkgcfg_lib_FFMPEG_swscale
-pkgcfg_lib_FFMPEG_swscale-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: pkgcfg_lib_SNDFILE_sndfile
-pkgcfg_lib_SNDFILE_sndfile-ADVANCED:INTERNAL=1
-prefix_result:INTERNAL=/usr/lib/x86_64-linux-gnu
+//ADVANCED property for variable: GIT_EXECUTABLE
+GIT_EXECUTABLE-ADVANCED:INTERNAL=1
 
