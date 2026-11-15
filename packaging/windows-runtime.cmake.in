@@ -1,0 +1,29 @@
+if(POLICY CMP0207)
+    cmake_policy(SET CMP0207 NEW)
+endif()
+set(CMAKE_GET_RUNTIME_DEPENDENCIES_PLATFORM windows+pe)
+set(CMAKE_GET_RUNTIME_DEPENDENCIES_TOOL objdump)
+set(CMAKE_GET_RUNTIME_DEPENDENCIES_COMMAND "@CMAKE_OBJDUMP@")
+file(GET_RUNTIME_DEPENDENCIES
+    EXECUTABLES "${CVRTR_EXECUTABLE}"
+    DIRECTORIES "@CVRTR_RUNTIME_DIR@"
+    RESOLVED_DEPENDENCIES_VAR dependencies
+    UNRESOLVED_DEPENDENCIES_VAR missing
+    PRE_EXCLUDE_REGEXES "api-ms-.*" "ext-ms-.*"
+    POST_EXCLUDE_REGEXES ".*[Ww][Ii][Nn][Dd][Oo][Ww][Ss][/\\\\].*")
+if(missing)
+    message(FATAL_ERROR "Missing runtime DLLs: ${missing}")
+endif()
+foreach(dependency IN LISTS dependencies)
+    file(INSTALL "${dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}" TYPE FILE)
+endforeach()
+# MSYS2 ships dependency-specific notices here, including runtime exceptions.
+if(EXISTS "@FFMPEG_PREFIX@/share/licenses")
+    file(INSTALL "@FFMPEG_PREFIX@/share/licenses/" DESTINATION "${CMAKE_INSTALL_PREFIX}/licenses/msys2" TYPE DIRECTORY)
+endif()
+set(manifest "")
+foreach(dependency IN LISTS dependencies)
+    get_filename_component(name "${dependency}" NAME)
+    string(APPEND manifest "${name}\n")
+endforeach()
+file(WRITE "${CMAKE_INSTALL_PREFIX}/runtime-dependencies.txt" "${manifest}")

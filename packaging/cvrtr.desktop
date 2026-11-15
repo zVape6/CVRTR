@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=CVRTR
+Comment=Convert audio files and preserve artwork
+Exec=cvrtr_gui
+Icon=audio-x-generic
+Terminal=false
+Categories=AudioVideo;Audio;
+MimeType=audio/mpeg;audio/x-wav;audio/flac;audio/ogg;audio/mp4;
